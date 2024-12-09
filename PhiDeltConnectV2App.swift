@@ -3,10 +3,17 @@
 //  Peter Roumeliotis
 
 import SwiftUI
+import Firebase
 
 //Start
 @main
 struct PhiDeltConnect: App {
+    init(){
+        
+        FirebaseApp.configure()
+        
+    }
+    
     @StateObject var session = SessionManager()
     
     var body: some Scene {
