@@ -3,12 +3,15 @@
 //  PeterRoumeliotis
 
 import SwiftUI
+import Firebase
+import FirebaseAuth
 
 // PROFILE TAB
 struct ProfileView: View {
+    @EnvironmentObject var session: SessionManager
     @State private var showYearAlert = false
-    @State private var yearsInFraternity = 1 
-    @State private var joinDate = "March 2023" 
+    @State private var yearsInFraternity = 1 // Example number of years
+    @State private var joinDate = "March 2023" // Example join date
 
     var body: some View {
         NavigationView {
@@ -48,7 +51,7 @@ struct ProfileView: View {
                             }
                             .accessibility(label: Text("\(yearsInFraternity) years in fraternity"))
                         }
-                        .buttonStyle(PlainButtonStyle())
+                        .buttonStyle(PlainButtonStyle()) // Removes default button styling
                         .padding(.bottom, 2)
                         .alert(isPresented: $showYearAlert) {
                             Alert(
@@ -59,7 +62,7 @@ struct ProfileView: View {
                         }
                     }
 
-                    // Student position
+                    // Subtitle
                     Text("Computer Science Student at St. John's University")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
@@ -85,6 +88,27 @@ struct ProfileView: View {
                 }
             }
             .navigationBarTitle("Profile", displayMode: .inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Button("Logout", action: logOutUser)
+                    } label: {
+                        Image(systemName: "ellipsis.circle") // Example: A menu button with an icon
+                            .font(.title2)
+                            .foregroundColor(.blue)
+                    }
+                }
+            }
+
         }
+    }
+    
+    func logOutUser(){
+        
+        try? Auth.auth().signOut()
+        session.isLoggedIn = false
+
+        
+        
     }
 }
