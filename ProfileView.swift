@@ -3,112 +3,166 @@
 //  PeterRoumeliotis
 
 import SwiftUI
-import Firebase
 import FirebaseAuth
 
-// PROFILE TAB
 struct ProfileView: View {
+    @StateObject private var profileManager = ProfileManager()
     @EnvironmentObject var session: SessionManager
-    @State private var showYearAlert = false
-    @State private var yearsInFraternity = 1 // Example number of years
-    @State private var joinDate = "March 2023" // Example join date
+    @State private var isEditing = false
+    @State private var showYearSheet = false // Use sheet instead of Alert
+    @State private var tempYearsInFraternity = 0 // Temporary variable for editing
 
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack {
-                    // Profile Image
-                    Image("ProfilePic")
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 150, height: 150)
-                        .clipShape(Circle())
-                        .overlay(Circle().stroke(Color.gray, lineWidth: 2))
-                        .shadow(radius: 5)
-                        .padding()
+            VStack {
+                // Profile Image
+                Image("ProfilePic")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 150, height: 150)
+                    .clipShape(Circle())
+                    .overlay(Circle().stroke(Color.gray, lineWidth: 2))
+                    .shadow(radius: 5)
+                    .padding()
 
-                    // Name and Shield Button
-                    HStack(alignment: .center, spacing: 10) {
-                        Text("Peter Roumeliotis")
+                HStack(alignment: .center, spacing: 10) {
+                    // Editable Name
+                    if isEditing {
+                        TextField("Name", text: $profileManager.profile.name)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                    } else {
+                        Text(profileManager.profile.name)
                             .font(.title)
-                            .padding(.bottom, 2)
-
-                        Button(action: {
-                            showYearAlert = true
-                        }) {
-                            ZStack {
-                                // Shield Icon
-                                Image(systemName: "shield.fill")
-                                    .resizable()
-                                    .frame(width: 30, height: 35)
-                                    .foregroundColor(Color.blue)
-
-                                // Number of Years Text
-                                Text("\(yearsInFraternity)")
-                                    .font(.title)
-                                    .foregroundColor(.white)
-                                    .bold()
-                            }
-                            .accessibility(label: Text("\(yearsInFraternity) years in fraternity"))
-                        }
-                        .buttonStyle(PlainButtonStyle()) // Removes default button styling
-                        .padding(.bottom, 2)
-                        .alert(isPresented: $showYearAlert) {
-                            Alert(
-                                title: Text("Fraternity Membership"),
-                                message: Text("Joined in \(joinDate)"),
-                                dismissButton: .default(Text("OK"))
-                            )
-                        }
+                            .bold()
                     }
 
-                    // Subtitle
-                    Text("Computer Science Student at St. John's University")
+                    // Badge Icon
+                    Button(action: {
+                        if isEditing {
+                            tempYearsInFraternity = profileManager.profile.yearsInFraternity
+                            showYearSheet = true
+                        }
+                    }) {
+                        ZStack {
+                            Image(systemName: "shield.fill")
+                                .resizable()
+                                .frame(width: 30, height: 35)
+                                .foregroundColor(Color.blue) // Always blue, no tint
+
+                            Text("\(profileManager.profile.yearsInFraternity)")
+                                .font(.title3)
+                                .foregroundColor(.white)
+                                .bold()
+                        }
+                        .accessibility(label: Text("\(profileManager.profile.yearsInFraternity) years in fraternity"))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .onTapGesture {
+                        //Try to fix this so that it shows the years when pressed not in edit mode
+                        if !isEditing {
+                            showYearSheet = true // Show sheet to display the years in read-only mode
+                        }
+                    }
+                }
+
+                // Editable Subtitle
+                if isEditing {
+                    TextField("Subtitle", text: $profileManager.profile.subtitle)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                } else {
+                    Text(profileManager.profile.subtitle)
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .padding(.bottom, 20)
+                        .foregroundColor(.gray)
+                }
 
-                    Divider()
+                Divider()
 
-                    // About and Experience Sections
-                    VStack(alignment: .leading) {
-                        Text("About")
-                            .font(.headline)
-                            .padding(.bottom, 5)
-                        Text("I am currently studying Computer Science at St. John's University. Eventually I would like to either have some form of job in Software Engineering or Cyber Security. I have had a passion for computers and the way they work since I was young. I am a hard worker and have done an excellent job in all of my past experiences. I exemplify leadership qualities as seen in my position as treasurer for my fraternity. Currently I am looking for an internship to excel in and learn as much as I can about my future career. I am skilled in Java, Javascript, Python, C++, and SQL.")
+                // Editable About Section
+                Text("About")
+                    .font(.headline)
+                if isEditing {
+                    TextEditor(text: $profileManager.profile.about)
+                        .frame(height: 100)
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray))
+                } else {
+                    Text(profileManager.profile.about)
+                        .font(.body)
+                }
+
+                Divider()
+
+                // Editable Experience Section
+                Text("Experience")
+                    .font(.headline)
+                if isEditing {
+                    TextEditor(text: $profileManager.profile.experience)
+                        .frame(height: 100)
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray))
+                } else {
+                    Text(profileManager.profile.experience)
+                        .font(.body)
+                }
+
+                Spacer()
+            }
+            .padding()
+            .navigationTitle("Profile")
+            .navigationBarItems(
+                leading: Button(action: logOutUser) {
+                    Image(systemName: "arrow.backward.square") // Logout Icon
+                    Text("Logout")
+                        .foregroundColor(.red)
+                },
+                trailing: Button(action: {
+                    if isEditing {
+                        profileManager.saveProfile() // Save when editing finishes
+                    }
+                    isEditing.toggle()
+                }) {
+                    Text(isEditing ? "Save" : "Edit")
+                }
+            )
+            .sheet(isPresented: $showYearSheet) {
+                VStack {
+                    Text(isEditing ? "Edit Years in Fraternity" : "Fraternity Membership")
+                        .font(.headline)
+                        .padding()
+
+                    if isEditing {
+                        TextField("Years", value: $tempYearsInFraternity, formatter: NumberFormatter())
+                            .keyboardType(.numberPad)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .padding()
+                    } else {
+                        Text("You have been in the fraternity for \(profileManager.profile.yearsInFraternity) years.")
                             .font(.body)
-                            .padding(.bottom, 20)
-                        Text("Experience")
-                            .font(.headline)
-                            .padding(.bottom, 5)
-                        Text("- Cyber Security Intern at NY Metro InfraGard\n- Software Engineer Intern at CTS Logistics")
-                            .font(.body)
+                            .padding()
+                    }
+
+                    Button("Save") {
+                        if isEditing {
+                            profileManager.profile.yearsInFraternity = tempYearsInFraternity
+                        }
+                        showYearSheet = false
                     }
                     .padding()
                 }
+                .padding()
             }
-            .navigationBarTitle("Profile", displayMode: .inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Button("Logout", action: logOutUser)
-                    } label: {
-                        Image(systemName: "ellipsis.circle") // Example: A menu button with an icon
-                            .font(.title2)
-                            .foregroundColor(.blue)
-                    }
-                }
+            .onAppear {
+                profileManager.fetchProfile()
             }
-
         }
     }
-    
-    func logOutUser(){
-        
-        try? Auth.auth().signOut()
-        session.isLoggedIn = false
 
-        
-        
+    // Logout Function
+    private func logOutUser() {
+        do {
+            try Auth.auth().signOut()
+            print("User logged out successfully.")
+            session.isLoggedIn = false
+        } catch let signOutError as NSError {
+            print("Error signing out: \(signOutError.localizedDescription)")
+        }
     }
 }
