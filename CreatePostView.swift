@@ -1,59 +1,33 @@
 import SwiftUI
 
-//Create Post View
 struct CreatePostView: View {
-    @Environment(\.presentationMode) var presentationMode
-    @ObservedObject var postManager: PostManager
-
-    @State private var profile: String = ""
-    @State private var content: String = ""
-    @State private var imageName: String = ""
-    @State private var likeCount: Int = 0
-    @State private var comments: [String] = []
+    @State private var postContent = ""
+    @ObservedObject var postManager = PostManager()
+    @ObservedObject var profileManager = ProfileManager()
 
     var body: some View {
-        NavigationView {
-            Form {
-                Section(header: Text("Post Details")) {
-                    TextField("Profile", text: $profile)
-                    TextField("Content", text: $content)
-                }
+        VStack {
+            TextField("What's on your mind?", text: $postContent)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .padding()
 
-                Section(header: Text("Image Details (Optional)")) {
-                    TextField("Image Name", text: $imageName)
-                }
-
-                Section(header: Text("Likes")) {
-                    Stepper("Likes: \(likeCount)", value: $likeCount, in: 0...1000)
-                }
-
-                Section(header: Text("Comments")) {
-                    Button("Add Comment") {
-                        comments.append("Sample Comment \(comments.count + 1)")
-                    }
-                    ForEach(comments, id: \.self) { comment in
-                        Text(comment)
-                    }
-                }
+            Button(action: {
+                guard !postContent.isEmpty else { return }
+                postManager.addPost(content: postContent, profile: profileManager.profile)
+                postContent = ""
+            }) {
+                Text("Post")
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
             }
-            .navigationBarTitle("Create Post", displayMode: .inline)
-            .navigationBarItems(
-                leading: Button("Cancel") {
-                    presentationMode.wrappedValue.dismiss()
-                },
-                trailing: Button("Save") {
-                    let newPost = Post(
-                        profile: profile,
-                        content: content,
-                        imageName: imageName.isEmpty ? nil : imageName,
-                        likeCount: likeCount,
-                        comments: comments
-                    )
-                    postManager.addPost(newPost)
-                    presentationMode.wrappedValue.dismiss()
-                }
-                .disabled(profile.isEmpty || content.isEmpty)
-            )
+            .padding()
+        }
+        .navigationTitle("Create Post")
+        .onAppear {
+            profileManager.fetchProfile()
         }
     }
 }
