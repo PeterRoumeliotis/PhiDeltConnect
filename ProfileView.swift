@@ -9,12 +9,26 @@ struct ProfileView: View {
     @State private var showYearSheet = false
     @State private var tempYearsInFraternity = 0
 
+    
+    private var profileImageName: String {
+           guard let userID = Auth.auth().currentUser?.uid else { return "ProfilePicDefault" }
+
+           switch userID {
+           case "jDCF6QUycDQDMP5m9Y8UVF5oOfy1":
+               return "ProfilePic"
+           case "gO2kqyfqA3NeNDEIm6sy8I7N7mE2":
+               return "ProfilePicArafat"
+           default:
+               return "ProfilePicDefault" // fallback image
+           }
+       }
+    
     var body: some View {
         NavigationView {
             ScrollView { // Use ScrollView to show full text and user posts
                 VStack(alignment: .leading, spacing: 20) {
                     // Profile Image
-                    Image("ProfilePic")
+                    Image(profileImageName)
                         .resizable()
                         .scaledToFill()
                         .frame(width: 150, height: 150)
