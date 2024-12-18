@@ -1,34 +1,34 @@
+// ProfileView.swift
+// PhiDeltConnectV2
+// Peter Roumeliotis
+
 import SwiftUI
 import FirebaseAuth
 
+// Shows the current user's profile
+// The user can edit their profile and see their posts
+
 struct ProfileView: View {
-    @StateObject private var profileManager = ProfileManager()
+    @StateObject private var profileManager: ProfileManager
     @StateObject private var userPostsManager = PostManager()
     @EnvironmentObject var session: SessionManager
     @State private var isEditing = false
     @State private var showYearSheet = false
     @State private var tempYearsInFraternity = 0
 
-    
-    private var profileImageName: String {
-           guard let userID = Auth.auth().currentUser?.uid else { return "ProfilePicDefault" }
+    // userID shows which user's profile is displayed.
+    // If nil, it is the current logged-in user's profile.
+    var userID: String?
 
-           switch userID {
-           case "jDCF6QUycDQDMP5m9Y8UVF5oOfy1":
-               return "ProfilePic"
-           case "gO2kqyfqA3NeNDEIm6sy8I7N7mE2":
-               return "ProfilePicArafat"
-           default:
-               return "ProfilePicDefault" // fallback image
-           }
-       }
-    
+    init(userID: String? = nil) {
+        _profileManager = StateObject(wrappedValue: ProfileManager(userID: userID))
+    }
+
     var body: some View {
         NavigationView {
-            ScrollView { // Use ScrollView to show full text and user posts
+            ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    // Profile Image
-                    Image(profileImageName)
+                    Image("\(profileManager.profile.profilePicName)")
                         .resizable()
                         .scaledToFill()
                         .frame(width: 150, height: 150)
@@ -38,17 +38,23 @@ struct ProfileView: View {
                         .padding(.top)
 
                     HStack(alignment: .center, spacing: 10) {
-                        // Editable Name
-                        if isEditing {
-                            TextField("Name", text: $profileManager.profile.name)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                        // Name, editable if current user's profile
+                        if isCurrentUserProfile {
+                            if isEditing {
+                                TextField("Name", text: $profileManager.profile.name)
+                                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                            } else {
+                                Text(profileManager.profile.name)
+                                    .font(.title)
+                                    .bold()
+                            }
                         } else {
                             Text(profileManager.profile.name)
                                 .font(.title)
                                 .bold()
                         }
 
-                        // Badge Icon (Years in fraternity)
+                        // Years in fraternity badge
                         Button(action: {
                             if isEditing {
                                 tempYearsInFraternity = profileManager.profile.yearsInFraternity
@@ -70,16 +76,23 @@ struct ProfileView: View {
                         }
                         .buttonStyle(PlainButtonStyle())
                         .onTapGesture {
-                            if !isEditing {
+                            // Show sheet to edit years
+                            if !isEditing && isCurrentUserProfile {
                                 showYearSheet = true
                             }
                         }
                     }
 
-                    // Editable Subtitle
-                    if isEditing {
-                        TextField("Subtitle", text: $profileManager.profile.subtitle)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                    // Subtitle field
+                    if isCurrentUserProfile {
+                        if isEditing {
+                            TextField("Subtitle", text: $profileManager.profile.subtitle)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                        } else {
+                            Text(profileManager.profile.subtitle)
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
+                        }
                     } else {
                         Text(profileManager.profile.subtitle)
                             .font(.subheadline)
@@ -88,10 +101,10 @@ struct ProfileView: View {
 
                     Divider()
 
-                    // About Section
+                    // About section
                     Text("About")
                         .font(.headline)
-                    if isEditing {
+                    if isCurrentUserProfile && isEditing {
                         TextEditor(text: $profileManager.profile.about)
                             .frame(minHeight: 100)
                             .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray))
@@ -103,10 +116,10 @@ struct ProfileView: View {
 
                     Divider()
 
-                    // Experience Section
+                    // Experience section
                     Text("Experience")
                         .font(.headline)
-                    if isEditing {
+                    if isCurrentUserProfile && isEditing {
                         TextEditor(text: $profileManager.profile.experience)
                             .frame(minHeight: 100)
                             .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray))
@@ -115,66 +128,122 @@ struct ProfileView: View {
                             .font(.body)
                             .fixedSize(horizontal: false, vertical: true)
                     }
+                    
+                    Divider()
+                    
+                    // Looking for Work section
+                    Text("Looking for Work")
+                        .font(.headline)
+                    if isCurrentUserProfile && isEditing {
+                        TextField("Job Title You're Looking For", text: $profileManager.profile.lookingForWorkTitle)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                    } else {
+                        if profileManager.profile.lookingForWorkTitle.isEmpty {
+                            Text("Not specified.")
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
+                        } else {
+                            Text(profileManager.profile.lookingForWorkTitle)
+                                .font(.body)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
 
                     Divider()
 
-                    // User's own posts
-                    Text("Your Posts")
-                        .font(.headline)
+                    // Followers section
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Followers (\(profileManager.profile.followers.count))")
+                            .font(.headline)
 
-                    // Display posts by the currently logged-in user
-                    ForEach(userPostsManager.posts) { post in
-                        VStack(alignment: .leading, spacing: 10) {
-                            HStack(alignment: .top, spacing: 10) {
-                                Image("ProfilePic")
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 50, height: 50)
-                                    .clipShape(Circle())
-                                    .overlay(Circle().stroke(Color.gray, lineWidth: 1))
-
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(post.authorName)
-                                        .font(.headline)
-                                        .bold()
-
-                                    Text(post.authorSubtitle)
-                                        .font(.subheadline)
-                                        .foregroundColor(.gray)
-
-                                    Text(formatDate(post.timestamp))
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-
-                                Spacer()
-
-                                // Like button and count
-                                VStack(spacing: 5) {
-                                    Button(action: {
-                                        userPostsManager.incrementLike(for: post)
-                                    }) {
-                                        Image(systemName: "heart")
-                                            .font(.title3)
-                                            .foregroundColor(.blue)
-                                    }
-                                    Text("\(post.likeCount)")
-                                        .font(.caption)
-                                }
+                        if profileManager.followerNames.isEmpty {
+                            Text("No followers yet.")
+                                .foregroundColor(.gray)
+                                .font(.subheadline)
+                        } else {
+                            ForEach(profileManager.followerNames, id: \.self) { followerName in
+                                Text(followerName)
+                                    .font(.body)
                             }
-
-                            Text(post.content)
-                                .font(.body)
-                                .padding(.top, 5)
-
-                            NavigationLink(destination: PostDetailView(postManager: userPostsManager, profileManager: profileManager, post: post)) {
-                                Text("View Comments")
-                                    .font(.subheadline)
-                                    .foregroundColor(.blue)
-                            }
-                            .buttonStyle(.plain)
                         }
-                        .padding(.vertical, 10)
+                    }
+
+                    Divider()
+
+                    // If viewing another user's profile, show follow/unfollow button
+                    if !isCurrentUserProfile {
+                        Button(action: {
+                            toggleFollow()
+                        }) {
+                            Text(profileManager.isCurrentUserFollowing ? "Unfollow" : "Follow")
+                                .foregroundColor(.white)
+                                .padding()
+                                .background(profileManager.isCurrentUserFollowing ? Color.red : Color.blue)
+                                .cornerRadius(8)
+                        }
+                    }
+
+                    // If this is the current user's profile show their posts
+                    if isCurrentUserProfile {
+                        Divider()
+
+                        Text("Your Posts")
+                            .font(.headline)
+
+                        ForEach(userPostsManager.posts) { post in
+                            VStack(alignment: .leading, spacing: 10) {
+                                HStack(alignment: .top, spacing: 10) {
+                                    Image("\(post.profilePicName)")
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 50, height: 50)
+                                        .clipShape(Circle())
+                                        .overlay(Circle().stroke(Color.gray, lineWidth: 1))
+
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(post.authorName)
+                                            .font(.headline)
+                                            .bold()
+
+                                        Text(post.authorSubtitle)
+                                            .font(.subheadline)
+                                            .foregroundColor(.gray)
+
+                                        Text(formatDate(post.timestamp))
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+
+                                    Spacer()
+
+                                    // Like button and count for user's own posts
+                                    VStack(spacing: 5) {
+                                        Button(action: {
+                                            userPostsManager.toggleLike(for: post)
+                                        }) {
+                                            Image(systemName: "heart")
+                                                .font(.title3)
+                                                .foregroundColor(post.likedBy.contains(Auth.auth().currentUser?.uid ?? "") ? .red : .blue)
+                                        }
+                                        Text("\(post.likeCount)")
+                                            .font(.caption)
+                                    }
+                                }
+
+                                Text(post.content)
+                                    .font(.body)
+                                    .padding(.top, 5)
+
+                                // Goes to the post detail view for comments
+                                NavigationLink(destination: PostDetailView(postManager: userPostsManager, profileManager: profileManager, post: post)) {
+                                    Text("View Comments")
+                                        .font(.subheadline)
+                                        .foregroundColor(.blue)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            .padding(.vertical, 10)
+                        }
                     }
 
                     Spacer()
@@ -184,18 +253,19 @@ struct ProfileView: View {
             .navigationTitle("Profile")
             .navigationBarItems(
                 leading: Button(action: logOutUser) {
-                    Image(systemName: "arrow.backward.square") // Logout Icon
+                    Image(systemName: "arrow.backward.square")
                     Text("Logout")
                         .foregroundColor(.red)
                 },
-                trailing: Button(action: {
+                trailing: isCurrentUserProfile ? Button(action: {
+                    // Toggle editing mode
                     if isEditing {
-                        profileManager.saveProfile() // Save when editing finishes
+                        profileManager.saveProfile()
                     }
                     isEditing.toggle()
                 }) {
                     Text(isEditing ? "Save" : "Edit")
-                }
+                } : nil
             )
             .sheet(isPresented: $showYearSheet) {
                 VStack {
@@ -226,11 +296,24 @@ struct ProfileView: View {
             }
             .onAppear {
                 profileManager.fetchProfile()
-                if let userID = Auth.auth().currentUser?.uid {
-                    userPostsManager.fetchPostsByUserID(userID: userID)
+                if let currentUserID = Auth.auth().currentUser?.uid {
+                    // If viewing own profile, fetch the user's own posts
+                    if isCurrentUserProfile {
+                        userPostsManager.fetchPostsByUserID(userID: currentUserID)
+                    }
                 }
             }
         }
+    }
+
+    private var isCurrentUserProfile: Bool {
+        guard let currentUserID = Auth.auth().currentUser?.uid else { return false }
+        return userID == nil || userID == currentUserID
+    }
+
+    private func toggleFollow() {
+        guard let viewedUserID = profileManager.userID else { return }
+        profileManager.toggleFollowUser(targetUserID: viewedUserID)
     }
 
     private func formatDate(_ date: Date) -> String {
@@ -240,7 +323,7 @@ struct ProfileView: View {
         return formatter.string(from: date)
     }
 
-    // Logout Function
+    // Log out the current user
     private func logOutUser() {
         do {
             try Auth.auth().signOut()
