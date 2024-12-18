@@ -8,7 +8,7 @@ PhiDeltConnect Documentation
 
 Overview
 
-The PhiDeltConnectV2 application leverages SwiftUI for its user interface and Google’s Firebase platform (in particular, Firestore and Firebase Authentication) for backend services. The app enables users to create accounts (or log in), view and create posts, follow other users, view notifications, and customize their profile information. It provides several core functionalities including a Home feed, a "For You" feed that personalizes content based on user preferences, notifications for likes/comments/follows, and a Chapter view that loads external content via a WebView.
+The PhiDeltConnect application leverages SwiftUI for its user interface and Google’s Firebase platform (in particular, Firestore and Firebase Authentication) for backend services. The app enables users to create accounts (or log in), view and create posts, follow other users, view notifications, and customize their profile information. It provides several core functionalities including a Home feed, a "For You" feed that personalizes content based on user preferences, notifications for likes/comments/follows, and a Chapter view that loads external content via a WebView.
 
 Firebase Integration
 The application uses Firebase in several key ways:
