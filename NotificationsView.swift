@@ -1,6 +1,11 @@
+// NotificationsView.swift
+// PhiDeltConnectV2
+// Peter Roumeliotis
+
 import SwiftUI
 
-//Notifications View
+// Shows a list of all notifications for the current user
+
 struct NotificationsView: View {
     @StateObject private var notificationManager = NotificationManager()
     
@@ -11,12 +16,14 @@ struct NotificationsView: View {
             }
             .navigationBarTitle("Notifications")
             .onAppear {
+                // Fetch notifications when the view shows
                 notificationManager.fetchNotifications()
             }
         }
     }
 }
 
+// Shows a single notification with an icon and text
 struct NotificationView: View {
     var notification: NotificationItem
     
@@ -30,15 +37,16 @@ struct NotificationView: View {
     }
     
     private func formatNotificationText() -> String {
-        // Now using senderName instead of senderUserID
+        // Format notification
         switch notification.type {
         case "like":
             return "Your post was liked by \(notification.senderName)."
         case "comment":
             return "Your post received a new comment from \(notification.senderName)."
+        case "follow":
+            return "You have a new follower: \(notification.senderName)."
         default:
             return "You have a new notification from \(notification.senderName)."
         }
     }
 }
-
