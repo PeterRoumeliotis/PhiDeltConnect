@@ -6,14 +6,16 @@ import SwiftUI
 import Firebase
 import FirebaseAuth
 
-//Login View
+// Lets a user enter their email and password and sign in using Firebase Auth.
+// If login works, SessionManager.isLoggedIn is set to true, bringing you to the main app
+
 struct LoginView: View {
     @EnvironmentObject var session: SessionManager
     @State private var email = ""
     @State private var password = ""
     @State var showError: Bool = false
     @State var errorMessage: String = ""
-    
+
     var body: some View {
         VStack {
             Spacer()
@@ -30,7 +32,7 @@ struct LoginView: View {
                 .padding()
                 .textFieldStyle(RoundedBorderTextFieldStyle())
             Button(action: {
-                loginUser()
+                loginUser() // Try to login
             }) {
                 Text("Sign In")
                     .frame(maxWidth: .infinity)
@@ -46,19 +48,20 @@ struct LoginView: View {
         .alert(errorMessage, isPresented: $showError, actions: {})
     }
     
-    func loginUser(){
-        Task{
-            do{
+    // Uses Firebase Auth's signIn method to authenticate
+    func loginUser() {
+        Task {
+            do {
                 try await Auth.auth().signIn(withEmail: email, password: password)
                 print("User Found")
-                session.isLoggedIn = true
+                session.isLoggedIn = true // Go to main app on success
             } catch {
                 await setError(error)
             }
-            
         }
     }
     
+    // Error messages
     func setError(_ error: Error) async {
         await MainActor.run {
             let authError = error as NSError
@@ -68,14 +71,11 @@ struct LoginView: View {
             case AuthErrorCode.wrongPassword.rawValue:
                 errorMessage = "The password is incorrect. Please try again."
             case AuthErrorCode.userNotFound.rawValue:
-                errorMessage = "No user found with this email. Please check your credentials."
+                errorMessage = "No user found with this email. Please check your login."
             default:
                 errorMessage = "Invalid login. Please check your email and password."
             }
             showError.toggle()
         }
     }
-
-    
 }
-
