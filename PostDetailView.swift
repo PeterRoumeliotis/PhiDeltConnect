@@ -1,4 +1,14 @@
+// PostDetailView.swift
+// PhiDeltConnectV2
+// Peter Roumeliotis
+
 import SwiftUI
+import Firebase
+import FirebaseAuth
+
+// Shows a specific post with comments and a comment input
+// Users can like/unlike the post and see who made it
+//Tapping the author's profile pic shows follow/unfollow options
 
 struct PostDetailView: View {
     @ObservedObject var postManager: PostManager
@@ -6,6 +16,19 @@ struct PostDetailView: View {
     
     var post: Post
     @State private var commentText: String = ""
+    
+    // Checks follow status of who made the post
+    @StateObject private var authorProfileManager: ProfileManager
+
+    @State private var showFollowDialog = false
+
+    init(postManager: PostManager, profileManager: ProfileManager, post: Post) {
+        self.postManager = postManager
+        self.profileManager = profileManager
+        self.post = post
+        // Initialized with the author's userID to manage follow/unfollow states
+        _authorProfileManager = StateObject(wrappedValue: ProfileManager(userID: post.authorID))
+    }
 
     private var firstName: String {
         post.authorName.split(separator: " ").first.map(String.init) ?? ""
@@ -13,15 +36,19 @@ struct PostDetailView: View {
     
     var body: some View {
         VStack {
-            // Post Content
+            // Post content display
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .top, spacing: 10) {
-                    Image("ProfilePic")
+                    Image("\(post.profilePicName)")
                         .resizable()
                         .scaledToFill()
                         .frame(width: 50, height: 50)
                         .clipShape(Circle())
                         .overlay(Circle().stroke(Color.gray, lineWidth: 1))
+                        .onTapGesture {
+                            // Show follow/unfollow dialog when tapping the profile image
+                            showFollowDialog = true
+                        }
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text(post.authorName)
@@ -44,16 +71,16 @@ struct PostDetailView: View {
             }
             .padding()
 
-            // Like and Comment functionality here
+            // Like button and count
             HStack(spacing: 20) {
-                // Like button and count
                 HStack(spacing: 5) {
                     Button(action: {
-                        postManager.incrementLike(for: post)
+                        postManager.toggleLike(for: post)
                     }) {
                         Image(systemName: "heart")
                             .font(.title3)
-                            .foregroundColor(.blue)
+                            // If current user has liked it, show red heart, else blue
+                            .foregroundColor(post.likedBy.contains(Auth.auth().currentUser?.uid ?? "") ? .red : .blue)
                     }
                     Text("\(post.likeCount)")
                         .font(.caption)
@@ -69,7 +96,7 @@ struct PostDetailView: View {
                     ForEach(postManager.comments) { comment in
                         VStack(alignment: .leading, spacing: 5) {
                             HStack(alignment: .top, spacing: 10) {
-                                Image("ProfilePic")
+                                Image(comment.profilePicName)
                                     .resizable()
                                     .scaledToFill()
                                     .frame(width: 40, height: 40)
@@ -80,7 +107,7 @@ struct PostDetailView: View {
                                     Text(comment.authorName)
                                         .font(.headline)
                                         .bold()
-
+                                    
                                     Text(formatDate(comment.timestamp))
                                         .font(.caption)
                                         .foregroundColor(.secondary)
@@ -100,7 +127,7 @@ struct PostDetailView: View {
                 .padding(.horizontal)
             }
 
-            // Comment Input
+            // Comment input and send button
             HStack {
                 TextField("Add a comment...", text: $commentText)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -108,6 +135,7 @@ struct PostDetailView: View {
 
                 Button(action: {
                     guard !commentText.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+                    // Add comment with PostManager
                     postManager.addComment(to: post, content: commentText, profile: profileManager.profile)
                     commentText = ""
                 }) {
@@ -119,9 +147,23 @@ struct PostDetailView: View {
         }
         .navigationTitle("\(firstName)'s Post")
         .onAppear {
+            // Fetch profile, comments, and author's profile
             profileManager.fetchProfile()
             postManager.fetchComments(for: post)
+            authorProfileManager.fetchProfile()
         }
+        .confirmationDialog("Profile Options", isPresented: $showFollowDialog, actions: {
+            if authorProfileManager.isCurrentUserFollowing {
+                Button("Unfollow") {
+                    authorProfileManager.toggleFollowUser(targetUserID: post.authorID)
+                }
+            } else {
+                Button("Follow") {
+                    authorProfileManager.toggleFollowUser(targetUserID: post.authorID)
+                }
+            }
+            Button("Cancel", role: .cancel) { }
+        })
     }
 
     private func formatDate(_ date: Date) -> String {
