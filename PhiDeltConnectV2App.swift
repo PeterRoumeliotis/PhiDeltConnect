@@ -5,13 +5,13 @@
 import SwiftUI
 import Firebase
 
-//Start
+// Uses a SessionManager to know if the user is logged in.
+// If user is logged in shows MainTabView, if not then shows LoginView.
 @main
 struct PhiDeltConnect: App {
-    init(){
-        
+    init() {
+        // Configure Firebase when the app starts
         FirebaseApp.configure()
-        
     }
     
     @StateObject var session = SessionManager()
@@ -29,7 +29,7 @@ struct PhiDeltConnect: App {
     }
 }
 
-//Session Manager
+// SessionManager tracks whether the user is logged in
 class SessionManager: ObservableObject {
     @Published var isLoggedIn: Bool = false
 }
