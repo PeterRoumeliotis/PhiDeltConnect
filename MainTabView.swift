@@ -4,9 +4,12 @@
 
 import SwiftUI
 
-//Main Tab View
+// Tab view displayed after login.
+// Home, Notifications, Create Post, Chapter, and Profile.
+
 struct MainTabView: View {
-    @StateObject private var postManager = PostManager() // Shared state for posts
+    // PostManager instance for consistency
+    @StateObject private var postManager = PostManager() // Shared PostManager
 
     var body: some View {
         TabView {
