@@ -1,13 +1,20 @@
+// NotificationManager.swift
+// PhiDeltConnectV2
+// Peter Roumeliotis
+
 import Foundation
 import Firebase
 import FirebaseFirestore
 import FirebaseAuth
+
+// Manages fetching notifications for the currently logged in user
 
 class NotificationManager: ObservableObject {
     @Published var notifications: [NotificationItem] = []
     private let db = Firestore.firestore()
     private var listener: ListenerRegistration?
     
+    // Listener gets all notifications for the current user
     func fetchNotifications() {
         guard let currentUserID = Auth.auth().currentUser?.uid else {
             print("No user logged in, cannot fetch notifications.")
@@ -47,7 +54,7 @@ class NotificationManager: ObservableObject {
                     tempNotifications.append(notification)
                 }
                 
-                // Fetch sender names after we've got all notifications
+                // After fetching notifications then fetch sender names
                 self.fetchSenderNames(for: tempNotifications) { updatedNotifications in
                     DispatchQueue.main.async {
                         self.notifications = updatedNotifications
@@ -75,6 +82,7 @@ class NotificationManager: ObservableObject {
         }
     }
     
+    // Gets the user's name from profiles
     private func fetchUserName(for userID: String, completion: @escaping (String) -> Void) {
         db.collection("profiles").document(userID).getDocument { snapshot, error in
             if let error = error {
