@@ -5,7 +5,7 @@ Phi Delta Theta LinkedIn App
 **IMPORTANT**
 When trying to download source code and test my app use login 
 User: Test@gmail.com 
-Pass: Test
+Pass: Test123
 There is no register account feature as this app is only available to those in Phi Delta Theta
 ************************************************************************************************
 
