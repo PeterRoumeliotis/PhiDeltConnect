@@ -9,8 +9,6 @@ Pass: Test
 There is no register account feature as this app is only available to those in Phi Delta Theta
 ************************************************************************************************
 
-----------------------------------------------------------------------------------------------------------------------------------------
-
 Peter Roumeliotis
 PhiDeltConnect Documentation
 
