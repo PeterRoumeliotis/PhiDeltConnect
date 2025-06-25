@@ -183,4 +183,3 @@ For arrays like likedBy or followers, FieldValue.arrayUnion() and FieldValue.arr
 
 Notifications: When a user likes a post or comments on it, a notification is created in Firestore’s notifications collection. The NotificationManager listens to these changes and updates the UI with new notifications in real time.
 
-![image](https://github.com/user-attachments/assets/067e8750-0689-4d36-88a7-be6acb46cb3e)
